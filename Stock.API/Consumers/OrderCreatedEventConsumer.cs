@@ -1,6 +1,7 @@
 ﻿using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Shared.Events;
+using Shared.RabbitMQ;
 using Stock.API.Models.DbContexts;
 
 namespace Stock.API.Consumers
@@ -8,10 +9,13 @@ namespace Stock.API.Consumers
     public class OrderCreatedEventConsumer : IConsumer<OrderCreatedEvent>
     {
         private readonly StockAPIDbContext stockAPIDbContext;
-
-        public OrderCreatedEventConsumer(StockAPIDbContext stockAPIDbContext)
+        private readonly ISendEndpointProvider sendEndpointProvider;
+        private readonly IPublishEndpoint publishEndpoint;
+        public OrderCreatedEventConsumer(StockAPIDbContext stockAPIDbContext, ISendEndpointProvider sendEndpointProvider, IPublishEndpoint publishEndpoint)
         {
             this.stockAPIDbContext = stockAPIDbContext;
+            this.sendEndpointProvider = sendEndpointProvider;
+            this.publishEndpoint = publishEndpoint;
         }
 
         public async Task Consume(ConsumeContext<OrderCreatedEvent> context)
@@ -41,10 +45,31 @@ namespace Stock.API.Consumers
                 stockAPIDbContext.Stocks.UpdateRange(updateStock);
                 stockAPIDbContext.SaveChanges();
 
+
+                StockReservedEvent stockReservedEvent = new()
+                {
+                    BuyerId = context.Message.BuyerId,
+                    OrderId = context.Message.OrderId,
+                    TotalPrice = context.Message.TotalPrice,
+                };
+
+
+                var sendEndpoint = await sendEndpointProvider.GetSendEndpoint(new Uri($"queue:{RabbitMQSettings.Payment_StockReservedEventQueue}"));
+
+                await sendEndpoint.Send(stockReservedEvent);
             }
             else
             {
-                // throw 
+
+                StockNotReservedEvent stockNotReservedEvent = new()
+                {
+                    BuyerId = context.Message.BuyerId,
+                    OrderId = context.Message.OrderId,
+                    Message = "Stok Yetersiz"
+                };
+
+
+                await publishEndpoint.Publish(stockNotReservedEvent);
             }
         }
     }
