@@ -51,6 +51,7 @@ namespace Stock.API.Consumers
                     BuyerId = context.Message.BuyerId,
                     OrderId = context.Message.OrderId,
                     TotalPrice = context.Message.TotalPrice,
+                    OrderItems = context.Message.OrderItems
                 };
 
 
