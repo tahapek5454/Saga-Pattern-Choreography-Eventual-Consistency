@@ -1,9 +1,11 @@
 using MassTransit;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Order.API.Consumers;
 using Order.API.Models.Contexts;
 using Order.API.ViewModels;
 using Shared.Events;
+using Shared.RabbitMQ;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,9 +15,17 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddMassTransit(configure =>
 {
+    configure.AddConsumer<PaymentCompletedEventConsumer>();
+
     configure.UsingRabbitMq((contex, configurator) =>
     {
         configurator.Host(builder.Configuration.GetConnectionString("RabbitMQ"));
+
+        configurator.ReceiveEndpoint(RabbitMQSettings.Order_PaymentCompletedEventQueue, e =>
+        {
+            e.ConfigureConsumer<PaymentCompletedEventConsumer>(contex);
+            e.DiscardSkippedMessages();
+        });
     });
 });
 
