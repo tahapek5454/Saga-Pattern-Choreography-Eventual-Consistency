@@ -1,11 +1,30 @@
+using MassTransit;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Order.API.Models.Contexts;
+using Order.API.ViewModels;
+using Shared.Events;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+
+builder.Services.AddMassTransit(configure =>
+{
+    configure.UsingRabbitMq((contex, configurator) =>
+    {
+        configurator.Host(builder.Configuration.GetConnectionString("RabbitMQ"));
+    });
+});
+
+
+builder.Services.AddDbContext<OrderAPIDbContext>(options =>
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL"));
+});
+
 
 var app = builder.Build();
 
@@ -16,10 +35,41 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.MapPost("/create-order", async ([FromBody] CreateOrderVM vm, OrderAPIDbContext context, IPublishEndpoint publishEndpoint) =>
+{
+    Order.API.Models.Order order = new()
+    {
+        BuyerId = Guid.Parse(vm.BuyerId),
+        OrderItems = vm.OrderItems.Select(x => new Order.API.Models.OrderItem()
+        {
+            ProductId = Guid.Parse(x.ProductId),
+            Count = x.Count,
+            Price = x.Price,
+        }).ToList(),
+        CreatedDate = DateTime.UtcNow,
+        OrderStatus = Order.API.Enums.OrderStatus.Suspend,
+        TotalPrice = vm.OrderItems.Sum(x => x.Price * x.Count),
+    };
 
-app.UseAuthorization();
+    await context.Orders.AddAsync(order);
+    await context.SaveChangesAsync();
 
-app.MapControllers();
+
+    OrderCreatedEvent orderCreatedEvent = new()
+    {
+        BuyerId = order.BuyerId,
+        OrderId = order.Id,
+        TotalPrice = order.TotalPrice,
+        OrderItems = order.OrderItems.Select(x => new Shared.Messages.OrderItemMessage()
+        {
+            Count = x.Count,
+            Price = x.Price,
+            ProductId = x.ProductId
+        }).ToList()
+    };
+
+    await publishEndpoint.Publish(orderCreatedEvent);
+
+});
 
 app.Run();
