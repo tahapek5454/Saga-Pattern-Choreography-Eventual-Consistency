@@ -13,7 +13,6 @@ namespace Shared.RabbitMQ
         public const string Order_PaymentCompletedEventQueue = "order_payment_completed_event_queue";
         public const string Order_PaymentFailedEventQueue = "order_payment_failed_event_queue";
         public const string Stock_PaymentFailedEventQueue = "stock_payment_failed_event_queue";
-
-
+        public const string Order_StockNotReservedEventQueue = "order_stock_not_reserved_event_queue";
     }
 }
