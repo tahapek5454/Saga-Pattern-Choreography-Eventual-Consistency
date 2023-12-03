@@ -9,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddMassTransit(configure =>
 {
     configure.AddConsumer<OrderCreatedEventConsumer>();
+    configure.AddConsumer<PaymentFailedEventConsumer>();
 
     configure.UsingRabbitMq((context, configurator) =>
     {
@@ -17,6 +18,12 @@ builder.Services.AddMassTransit(configure =>
         configurator.ReceiveEndpoint(RabbitMQSettings.Stock_OrderCreatedEventQueue, e =>
         {
             e.ConfigureConsumer<OrderCreatedEventConsumer>(context);
+            e.DiscardSkippedMessages();
+        });
+
+        configurator.ReceiveEndpoint(RabbitMQSettings.Stock_PaymentFailedEventQueue, e =>
+        {
+            e.ConfigureConsumer<PaymentFailedEventConsumer>(context);
             e.DiscardSkippedMessages();
         });
 

@@ -36,7 +36,7 @@ namespace Payment.API.Consumers
             {
                 Console.WriteLine($"{context.Message.OrderId} numaralı {context.Message.TotalPrice} TL tutarlı ödeme başarısız. ");
 
-                PaymentFaildEvent paymentFaildEvent = new()
+                PaymentFailedEvent paymentFaildEvent = new()
                 {
                     Message = $"{context.Message.OrderId} numaralı {context.Message.TotalPrice} TL tutarlı ödeme başarısız. ",
                     OrderId = context.Message.OrderId,

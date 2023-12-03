@@ -16,6 +16,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddMassTransit(configure =>
 {
     configure.AddConsumer<PaymentCompletedEventConsumer>();
+    configure.AddConsumer<PaymentFailedEventConsumer>();   
 
     configure.UsingRabbitMq((contex, configurator) =>
     {
@@ -24,6 +25,12 @@ builder.Services.AddMassTransit(configure =>
         configurator.ReceiveEndpoint(RabbitMQSettings.Order_PaymentCompletedEventQueue, e =>
         {
             e.ConfigureConsumer<PaymentCompletedEventConsumer>(contex);
+            e.DiscardSkippedMessages();
+        });
+
+        configurator.ReceiveEndpoint(RabbitMQSettings.Order_PaymentFailedEventQueue, e =>
+        {
+            e.ConfigureConsumer<PaymentFailedEventConsumer>(contex);
             e.DiscardSkippedMessages();
         });
     });
