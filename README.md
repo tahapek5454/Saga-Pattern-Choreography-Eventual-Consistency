@@ -2,8 +2,8 @@
 The aim of this project is to process the  Eventual Consistency  by following the best practices with  Saga Pattern Choreography  on NETCore 
 
 ### Necessary For Docker
-+ RabbitMQ : **docker run -d -p 15672:15672 -p 5672:5672 --name rabbitmqcontainer rabbitmq:3-management**
-+ PostgreSQL : **docker run --name postgrescontainer -e POSTGRES_PASSWORD=yourpassword -d -p 5432:5432 postgres**
++ RabbitMQ : ```docker run -d -p 15672:15672 -p 5672:5672 --name rabbitmqcontainer rabbitmq:3-management```
++ PostgreSQL : ```docker run --name postgrescontainer -e POSTGRES_PASSWORD=yourpassword -d -p 5432:5432 postgres```
 
 ### Eventual Consistency - Saga Pattern
 + It is a transaction management pattern used in distributed systems and microservices architectures.
